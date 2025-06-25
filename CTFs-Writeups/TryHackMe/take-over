@@ -1,0 +1,115 @@
+# TryHackMe - TakeOver Lab: Walkthrough
+
+## Overview
+
+The "TakeOver" room on TryHackMe is a beginner-to-intermediate level challenge designed to test web reconnaissance, subdomain enumeration, and SSL certificate inspection. The ultimate goal is to identify and access a hidden subdomain hosting the flag.
+
+---
+
+## Objective
+
+Utilize subdomain enumeration techniques and SSL certificate analysis to locate and access a hidden internal subdomain and retrieve the final flag.
+
+---
+
+## Step 1: Initial Reconnaissance
+
+### Host Mapping
+
+Before beginning enumeration, we map the primary domain to the target IP in /etc/hosts:
+
+
+echo "10.10.XXX.XXX futurevera.thm" | sudo tee -a /etc/hosts
+
+
+Visiting https://futurevera.thm yields a basic or default page. No sensitive content is immediately visible.
+
+---
+
+## Step 2: Subdomain Enumeration Using FFUF
+
+To uncover hidden subdomains, we perform virtual host fuzzing using ffuf:
+
+
+ffuf \
+  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million.txt \
+  -H "Host: FUZZ.futurevera.thm" \
+  -u https://10.10.XXX.XXX \
+  -fs 0,4605
+
+
+### Results:
+
+* blog.futurevera.thm
+* support.futurevera.thm
+
+These are valid subdomains identified by filtering out false responses using -fs (filter size).
+
+Update /etc/hosts to include the discovered subdomains:
+
+
+echo "10.10.XXX.XXX blog.futurevera.thm" | sudo tee -a /etc/hosts
+echo "10.10.XXX.XXX support.futurevera.thm" | sudo tee -a /etc/hosts
+
+
+Accessing them in the browser:
+
+* blog.futurevera.thm: may host a WordPress/blog platform or placeholder
+* support.futurevera.thm: displays a generic or placeholder page
+
+---
+
+## Step 3: SSL Certificate Inspection
+
+To uncover additional internal subdomains, inspect the SSL certificate for the support.futurevera.thm site.
+
+### Manual Browser Inspection:
+
+* Visit https://support.futurevera.thm
+* Click the padlock icon → View Certificate
+* Navigate to *Subject Alternative Names (SANs)*
+
+### Hidden SAN Entry Discovered:
+
+
+secrethelpdesk934752.support.futurevera.thm
+
+
+This internal subdomain is not publicly discoverable via dictionary enumeration.
+
+---
+
+## Step 4: Accessing the Hidden Subdomain
+
+Map the newly discovered subdomain to the host:
+
+
+echo "10.10.XXX.XXX secrethelpdesk934752.support.futurevera.thm" | sudo tee -a /etc/hosts
+
+
+Access it via browser:
+
+url
+https://secrethelpdesk934752.support.futurevera.thm
+
+
+This subdomain is live and hosts the CTF flag.
+
+---
+
+## Step 5: Retrieve the Flag
+
+The flag is displayed directly on the web page:
+
+
+flag{beea0d6edfcee06a59b83fb50ae81b2f}
+
+
+---
+
+## Tools Used
+
+* *ffuf* – Subdomain fuzzing via virtual host header manipulation
+* *Browser (Firefox/Chrome)* – SSL certificate inspection
+* *Linux host tools* – Editing /etc/hosts, curl, etc.
+
