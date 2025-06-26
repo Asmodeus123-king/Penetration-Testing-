@@ -1,0 +1,101 @@
+# TryHackMe - Corridor Lab: Walkthrough
+
+## 🧠 Overview
+
+The TryHackMe "Corridor" lab is a beginner-friendly web challenge focusing on the exploitation of *Insecure Direct Object References (IDOR)* through URL-based object manipulation. The goal is to find and access a hidden room (door 0) by reverse-engineering how door identifiers are structured.
+
+---
+
+## 🎯 Objective
+
+You are presented with a web page containing 13 clickable doors, each representing a different URL. Your task is to:
+
+1. Understand the logic behind the URL structure.
+2. Identify any hidden doors not linked from the main interface.
+3. Access the hidden door and capture the flag.
+
+---
+
+## 🔍 Step 1: Initial Enumeration
+
+Access the provided IP or domain:
+
+
+http://<IP>/
+
+
+You see 13 doors in a corridor, each linking to a URL that looks like this:
+
+
+http://<IP>/c4ca4238a0b923820dcc509a6f75849b
+
+
+Each URL segment is a *32-character hexadecimal string*, indicating it's likely an MD5 hash.
+
+---
+
+## 🧠 Step 2: Identifying the Pattern (MD5 Hashing)
+
+By clicking a few door links, we notice the content is similar — just a message like:
+
+
+This room is empty.
+
+
+Extract one of the hashes and reverse it using CrackStation or md5sum. For example:
+
+bash
+echo -n "1" | md5sum
+# Output: c4ca4238a0b923820dcc509a6f75849b
+
+
+You realize:
+
+* 1 → c4ca4238a0b923820dcc509a6f75849b
+* 2 → c81e728d9d4c2f636f067f89cc14862c
+* ...
+* 13 → c51ce410c124a10e0db5e4b97fc2af39
+
+All doors are simply MD5 hashes of numbers from 1 to 13.
+
+---
+
+## 🧩 Step 3: Testing Edge Cases (IDOR Exploitation)
+
+If the developer created hashes of numbers to access door pages, we might ask:
+**What happens if we try MD5 hash of 0?**
+
+Let's test:
+
+bash
+echo -n "0" | md5sum
+# Output: cfcd208495d565ef66e7dff9f98764da
+
+
+Navigate to:
+
+
+http://<IP>/cfcd208495d565ef66e7dff9f98764da
+
+
+This leads to a *hidden page* with a special message — the *flag*!
+
+---
+
+## 🏁 Step 4: Capture the Flag
+
+On the hidden page (door 0), you find:
+
+
+flag{2477ef02448ad9156661ac40a6b8862e}
+
+
+---
+
+## 🛠 Tools Used
+
+* md5sum (Linux command line) – to create MD5 hashes
+* CrackStation.net – for decoding hashes (optional)
+* Web Browser – to interact with the challenge
+
+
