@@ -44,7 +44,7 @@ This room is empty.
 
 Extract one of the hashes and reverse it using CrackStation or md5sum. For example:
 
-bash
+
 echo -n "1" | md5sum
 # Output: c4ca4238a0b923820dcc509a6f75849b
 
@@ -67,7 +67,6 @@ If the developer created hashes of numbers to access door pages, we might ask:
 
 Let's test:
 
-bash
 echo -n "0" | md5sum
 # Output: cfcd208495d565ef66e7dff9f98764da
 
