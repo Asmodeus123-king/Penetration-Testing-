@@ -1,0 +1,53 @@
+TryHackMe – Agent‑T Lab: Walkthrough
+A beginner-friendly web challenge demonstrating real-world exploitation of a hidden backdoor in PHP development builds. Here's everything broken down step-by-step — perfect for showcasing in a polished GitHub repo.
+
+1. 🔍 Lab Overview
+Objective: Identify and exploit a hidden RCE vulnerability in a dev-mode PHP server to gain root access and capture the flag.
+
+Skillsets: Web enumeration, HTTP header analysis, exploit research, RCE, and privilege escalation.
+
+Level: Easy.
+
+2. 🔧 Step 1 – Initial Enumeration
+Goal: Identify accessible services and technologies.
+
+Run a service scan:
+
+nmap -sC -sV -oN nmap.txt <TARGET_IP>
+Results: Port 80 open with HTTP service running PHP CLI server 8.1.0-dev 
+
+3. 🧭 Step 2 – Web Reconnaissance
+Visiting the web page shows a static "Admin Dashboard" (template only)—no functionality 
+
+Directory brute-forcing (gobuster/ffuf) yields no valid endpoints.
+
+Browser inspection of HTML confirms minimal content.
+
+4. 💡 Step 3 – HTTP Header Analysis
+A keen eye on HTTP headers uncovers:
+
+makefile
+Copy code
+X-Powered-By: PHP/8.1.0-dev
+PHP dev versions are notorious for hiding backdoors—making this an exploitable feature 
+
+5. 🚨 Step 4 – Exploit Research & Execution
+Search for "PHP 8.1.0-dev exploit" and discover Exploit‑DB #49933, which abuses a built-in backdoor via the User-Agent header 
+
+Download and run the Python exploit script:
+
+
+wget https://www.exploit-db.com/download/49933 -O exploit.py
+python3 exploit.py
+Provide the target URL when prompted → shell access gained as root 
+
+6. 🏁 Step 5 – Flag Retrieval
+With root shell:
+
+
+Copy code
+find / -type f -name flag.txt 2>/dev/null
+cat /flag.txt
+Flag:
+
+flag{4127d0530abf16d6d23973e3df8dbecb}
