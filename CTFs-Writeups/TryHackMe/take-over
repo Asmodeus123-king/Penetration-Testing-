@@ -31,11 +31,7 @@ Visiting https://futurevera.thm yields a basic or default page. No sensitive con
 To uncover hidden subdomains, we perform virtual host fuzzing using ffuf:
 
 
-ffuf \
-  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million.txt \
-  -H "Host: FUZZ.futurevera.thm" \
-  -u https://10.10.XXX.XXX \
-  -fs 0,4605
+ffuf -w /usr/share/seclists/Discovery/DNS/subdomains-top1million.txt -H "Host: FUZZ.futurevera.thm" -u https://10.10.XXX.XXX -fs 0,4605
 
 
 ### Results:
