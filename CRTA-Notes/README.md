@@ -47,4 +47,55 @@ I am currently preparing for the CRTA exam (in 15 days) and using this repo to:
 
 ---
 
+## 🧪 Practice Rooms (TryHackMe)
+
+Here are some *recommended rooms* to simulate CRTA-style skills in a real-world AD environment:
+
+### 🔍 Reconnaissance & User Enumeration
+
+- [Attacktive Directory](https://tryhackme.com/room/attacktivedirectory)
+- [Overpass 3 - Hacked](https://tryhackme.com/room/overpass3hacked)
+- [Blue](https://tryhackme.com/room/blue)
+- [Relevant](https://tryhackme.com/room/relevant)
+- [Ignite](https://tryhackme.com/room/ignite)
+
+### 🛠 Initial Foothold & Exploitation
+
+- [Retro](https://tryhackme.com/room/retro)  
+- [Bounty Hacker](https://tryhackme.com/room/bountyhacker)  
+- [Dogcat](https://tryhackme.com/room/dogcat)
+
+### 🧠 Privilege Escalation (Windows Focused)
+
+- [Windows Privesc](https://tryhackme.com/room/windows10privesc)  
+- [Lian_Yu](https://tryhackme.com/room/lianyu)
+
+### 🏹 Active Directory & Lateral Movement
+
+- [AD Basics](https://tryhackme.com/room/activedirectorybasics)  
+- [Weak RSA](https://tryhackme.com/room/weaksaucersaroom)  
+- [Steel Mountain](https://tryhackme.com/room/steelmountain)
+
+---
+
+## 🧰 Tools Covered
+
+- nmap, smbclient, rpcclient, enum4linux, crackmapexec
+- Evil-WinRM, Rubeus, mimikatz, SharpHound, BloodHound
+- PEAS, PowerView, Impacket suite, Certipy
+
+---
+
+## 📌 Author
+
+Maintained by [HiHacker](https://github.com/Asmodeus123-king)
+
+> If you find this useful, drop a ⭐ on the repo to support the project!
+
+---
+
+## 📎 License
+
+This repository is for *educational purposes only*. Always practice hacking ethically and in safe, legal environments.
+---
 ## 📂 Folder Structure
